@@ -1,0 +1,13 @@
+{
+  "appId": "com.skyq.app",
+  "appName": "SKYGUESSR",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+build/
+.DS_Store
+*.log
+*.xcuserstate
+xcuserdata/
+.DS_Store?

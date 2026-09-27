@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>SKYGUESSR — Find the Flight Route</title>
+<meta name="description" content="A daily flight-route deduction game. Guess the secret origin and destination airport in 5 tries using distance, direction and clue reveals.">
+<meta property="og:title" content="SKYGUESSR — Find the Route">
+<meta property="og:description" content="Guess the secret flight route in 5 tries. Distances, bearings and drip-fed clues guide you. New route every day.">
+<meta property="og:image" content="assets/icons/og-cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/icon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#efe7d6">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true"></div>
+    <div>
+      <div class="brand-name">SKY<em>GUESSR</em></div>
+      <span class="brand-sub">DAILY ROUTE BUREAU</span>
+    </div>
+  </div>
+  <div class="masthead-tools">
+    <button class="tool-btn tool-btn-primary" id="btnCharter" title="Customize route scope">CHARTER</button>
+    <button class="tool-btn" id="btnArchive" title="Past routes">ARCHIVE</button>
+    <button class="tool-btn" id="btnStats" title="Statistics">TALLY</button>
+    <button class="tool-btn" id="btnHelp" title="How to play">MANUAL</button>
+    <button class="tool-btn" id="btnTheme" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div class="postcard" id="streakBanner" style="display:none">
+  <div class="pc-stamp" aria-hidden="true"></div>
+  <div>
+    <div class="pc-text" id="streakText"></div>
+    <div class="pc-sub">RETURN TOMORROW BEFORE MIDNIGHT TO KEEP IT CURRENT</div>
+  </div>
+  <div class="pc-flames" id="streakCount" aria-hidden="true"></div>
+</div>
+
+<!-- ==================== ROUTE BUREAU (world map) ==================== -->
+<section class="bureau-section" id="bureauSection" aria-label="Route bureau map">
+  <div class="bureau-head">
+    <div>
+      <div class="bh-title">Route Bureau</div>
+      <div class="bh-sub" id="bureauSub">SELECT A COUNTRY TO VIEW ITS CARRIERS</div>
+    </div>
+    <button class="tool-btn tool-btn-primary" id="btnHomeCountry" title="Set your home country">SET HOME ✈</button>
+  </div>
+  <div id="bureauMapMount"></div>
+  <div class="bureau-homecard" id="homeCard" style="display:none"></div>
+</section>
+
+<!-- ==================== THE TICKET ==================== -->
+<section class="ticket" aria-label="Daily route ticket">
+
+  <div class="ticket-head">
+    <div class="ticket-title">
+      Form S-27 · Route Inquiry
+      <small>Dept. of Wayfinding — puzzle of the day</small>
+    </div>
+    <div class="ticket-stub">
+      <span class="lbl">Guesses</span>
+      <span class="val" id="guessCount">0/5</span>
+    </div>
+  </div>
+
+  <div class="config-strip">
+    <span id="configSummary">WORLD · ALL CARRIERS · ANY RANGE</span>
+    <span class="niche-badge" id="nicheBadge" title="Niche point multiplier">×1</span>
+  </div>
+
+  <nav class="class-tabs" id="tabs" aria-label="Difficulty">
+    <button class="class-tab" data-diff="easy">Easy<span class="tab-fare">any region · hubs</span></button>
+    <button class="class-tab" data-diff="medium">Medium<span class="tab-fare">worldwide</span></button>
+    <button class="class-tab active" data-diff="hard">Hard<span class="tab-fare">non-US only</span></button>
+  </nav>
+
+  <!-- clue manifest -->
+  <div class="manifest">
+    <div class="manifest-head">
+      <span class="mh-title" id="diffLabel">Hard Route</span>
+      <span class="mh-note" id="poolLabel">NON-US DEPARTURES</span>
+    </div>
+    <div id="clueRows"></div>
+  </div>
+
+  <!-- guess ledger -->
+  <div class="ledger">
+    <div class="ledger-cols">
+      <span>No.</span><span>From</span><span>To</span><span>Distance to target</span>
+    </div>
+    <div id="guessRows"></div>
+  </div>
+
+  <!-- composer -->
+  <div class="composer" id="composer">
+    <div class="cmp-field">
+      <div class="cmp-label"><span>Departure</span><button class="cmp-hint-btn" id="hintOrigin" title="Reveal the hidden origin">HINT</button></div>
+      <input class="cmp-input" id="inOrigin" type="text" autocomplete="off" spellcheck="false" placeholder="airport or city" maxlength="40">
+      <div class="ac-list" id="acOrigin" style="display:none"></div>
+    </div>
+    <div class="cmp-field">
+      <div class="cmp-label"><span>Arrival</span><button class="cmp-hint-btn" id="hintDest" title="Reveal the hidden destination">HINT</button></div>
+      <input class="cmp-input" id="inDest" type="text" autocomplete="off" spellcheck="false" placeholder="airport or city" maxlength="40">
+      <div class="ac-list" id="acDest" style="display:none"></div>
+    </div>
+    <div class="route-arrow" aria-hidden="true">✈</div>
+    <div class="submit-row">
+      <button class="btn-primary" id="btnSubmit">File this route</button>
+    </div>
+  </div>
+
+  <!-- result stamp + summary (hidden until game over) -->
+  <div class="stamp-wrap" id="stampWrap" style="display:none">
+    <div class="rubber-stamp" id="stampText">Confirmed</div>
+    <div class="stamp-sub" id="stampSub"></div>
+    <div class="stamp-route" id="stampRoute"></div>
+    <div class="stamp-points" id="stampPoints"></div>
+    <div class="submit-row" style="margin-top:14px">
+      <button class="btn-primary" id="btnPractice">Fly a practice route</button>
+    </div>
+  </div>
+
+  <!-- perforated stub with actions -->
+  <div class="perf" aria-hidden="true"><span class="perf-r"></span></div>
+  <div class="ticket-foot">
+    <button class="foot-link" id="btnShare">↗ Share result</button>
+    <span class="foot-stamp" id="ticketSerial">SER. 000-000</span>
+  </div>
+</section>
+
+<!-- ==================== ADS (classifieds) ==================== -->
+<div class="classifieds">
+  <div class="classifieds-head">
+    <span class="ch-title">Sponsored Notices</span><span class="ch-rule"></span>
+  </div>
+  <div class="ad-legal" style="display:none"></div>
+  <div class="ad-slot" id="adBanner" data-ad="banner"></div>
+</div>
+
+<footer class="legal">
+  SKYGUESSR is a daily deduction game · distances are great-circle estimates · durations simulated<br>
+  Not affiliated with any airline or bureau, real or imagined ·
+  <a href="#" id="btnPrivacy">Privacy</a> · <a href="#" id="btnTerms">Terms</a>
+</footer>
+
+<!-- ==================== MANUAL (how to play) ==================== -->
+<div class="overlay" id="modalHelp">
+  <div class="dialog">
+    <div class="dialog-head">
+      <h2>Operations Manual</h2>
+      <span class="form-no">FORM S-27 · REV. 12</span>
+      <button class="dialog-x" data-close>CLOSE</button>
+    </div>
+    <div class="howto-row"><div class="howto-num">1</div><p>Each morning the Bureau files one <b>secret flight route</b> — an origin and destination pair. Identify <b>both airports in 5 filings</b>. Every player worldwide gets the same route.</p></div>
+    <div class="howto-row"><div class="howto-num">2</div><p>File a guess with the airport search. Each wrong airport reports its <b>great-circle distance</b> to the hidden airport on that side. Miss by 300&nbsp;km? You're warm. Miss by 9,000? Rethink the continent.</p></div>
+    <div class="howto-row"><div class="howto-num">3</div><p>Every filing declassifies one more line of the manifest: <span class="mono">duration → aircraft → type → direction → airline</span>. The <b>route chart</b> is stamped only when the case closes.</p></div>
+    <div class="howto-row"><div class="howto-num">4</div><p>Stuck? A <span class="mono">HINT</span> reveals one airport — earn hints by watching a sponsor notice, and each one costs 150 points. A first-filing solve pays <b>1000</b>. </p></div>
+    <div class="howto-row"><div class="howto-num">5</div><p>Three classes of service daily — <b>Easy</b>, <b>Medium</b>, <b>Hard</b>. Solve all three to keep the streak postcard on your wall.</p></div>
+    <button class="btn-primary" data-close>ACKNOWLEDGED — LET'S FLY</button>
+  </div>
+</div>
+
+<!-- ==================== TALLY (stats) ==================== -->
+<div class="overlay" id="modalStats">
+  <div class="dialog">
+    <div class="dialog-head">
+      <h2>Service Tally</h2>
+      <span class="form-no">CUMULATIVE RECORD</span>
+      <button class="dialog-x" data-close>CLOSE</button>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="v" id="stPlayed">0</div><div class="k">Filed</div></div>
+      <div class="stat-cell"><div class="v" id="stWinPct">0%</div><div class="k">Solved</div></div>
+      <div class="stat-cell"><div class="v" id="stStreak">0</div><div class="k">Streak</div></div>
+      <div class="stat-cell"><div class="v" id="stMax">0</div><div class="k">Best</div></div>
+    </div>
+    <div class="stat-lines">
+      <div class="stat-line"><span class="sl-label">Points earned</span><span class="sl-dots"></span><span class="sl-val" id="stPoints">0</span></div>
+      <div class="stat-line"><span class="sl-label">Avg route length</span><span class="sl-dots"></span><span class="sl-val" id="stDist">—</span></div>
+      <div class="stat-line"><span class="sl-label">Next route in</span><span class="sl-dots"></span><span class="sl-val" id="stNext">--:--:--</span></div>
+    </div>
+    <div id="archiveRows"></div>
+    <button class="btn-primary" data-close style="margin-top:18px">CLOSE THE LEDGER</button>
+  </div>
+</div>
+
+<!-- ==================== PRIVACY ==================== -->
+<div class="overlay" id="modalPrivacy">
+  <div class="dialog">
+    <div class="dialog-head">
+      <h2>Privacy &amp; Terms</h2>
+      <button class="dialog-x" data-close>CLOSE</button>
+    </div>
+    <p style="font-size:14px; line-height:1.6">SKYGUESSR stores your game progress, streaks and settings <b>only on your device</b> (localStorage). No account, no tracking of your own.</p>
+    <p style="font-size:14px; line-height:1.6"><b>Ads.</b> The website may show Google AdSense notices; the mobile app uses Google AdMob. Ad partners may use device identifiers to personalize ads where permitted. EU players are asked for consent before personalized ads (GDPR/TCF).</p>
+    <p style="font-size:14px; line-height:1.6"><b>Remove ads.</b> The one-time "Remove Ads" purchase retires every banner permanently.</p>
+    <p style="font-size:14px; line-height:1.6"><b>Contact.</b> support@skyguessr.app</p>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/countries.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ads.js"></script>
+<script src="js/routemap.js"></script>
+<script src="js/bureau.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
